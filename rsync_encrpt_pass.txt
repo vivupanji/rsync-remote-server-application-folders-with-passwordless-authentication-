@@ -1,0 +1,15 @@
+before script execution generate the gpg key & following cmd should be run on the prod server :
+
+# cleartest password needed as file 
+echo "userpass" > /home/syssync/rsync
+chmod 600 /home/syssync/rsync
+
+#after .gpg is created remove the cleartext password file 
+
+#command to create encrypted password file needed for rsync-path to non-iteractivly type password in script
+gpg --symmetric --cipher-algo AES256 --batch --passphrase-file /home/syssync/rsync -o /home/syssync/rsync_pass.gpg /home/syssync/rsync
+
+#command to create decrypt encrypted password file  .gpg is encrypte file 
+# This will be used  with export command check in main script 
+gpg --decrypt --batch --passphrase-file /home/syssync/rsync /home/syssync/rsync_pass.gpg
+
