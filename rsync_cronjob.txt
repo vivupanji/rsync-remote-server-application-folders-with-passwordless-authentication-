@@ -16,7 +16,7 @@ export SSHPASS=$( gpg --quiet --decrypt --batch --passphrase-file /home/syssync/
 
 
 # Perform the backup using rsync
-rsync -avz --stats --exclude=java_pid*.hprof  --rsh="ssh -o SendEnv=SSHPASS" --rsync-path="echo $SSHPASS |sudo -Sv;  [ \$? -eq 0 ] && sudo rsync" \
+rsync -avz --stats  --rsh="ssh -o SendEnv=SSHPASS" --rsync-path="echo $SSHPASS |sudo -Sv;  [ \$? -eq 0 ] && sudo rsync" \
 --log-file="$LOGFILE" \
 --log-file-format="File changed! %f %i" \
 "$SOURCES" "$TARGET"
