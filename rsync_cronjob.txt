@@ -1,0 +1,47 @@
+
+ bash script  to rsync  remote server application folder with passwordless authentication automated in cronjob
+-------------------------------------------------------------------------------------------------------------------------------
+#!/bin/bash/
+#specifications
+SOURCES="/usr/share/etpsapp/"
+TARGET="syssync@172.x.x.x:/usr/share/etpsapp/"
+EMAIL_RECIPIENT="example@ad.com"
+DAT1=`date +"%Y-%m-%d-%H%M"`
+#logfile generation with random date and time on daily 
+LOGFILE="/opt/monitoring/tmp/appsync/rsync_xxx$DAT1.txt"
+
+
+#export the encrypted from the sshpass variable from bash profile
+export SSHPASS=$( gpg --quiet --decrypt --batch --passphrase-file /home/syssync/rsync /home/syssync/rsync_pass.gpg)
+
+
+# Perform the backup using rsync
+rsync -avz --stats --exclude=java_pid*.hprof  --rsh="ssh -o SendEnv=SSHPASS" --rsync-path="echo $SSHPASS |sudo -Sv;  [ \$? -eq 0 ] && sudo rsync" \
+--log-file="$LOGFILE" \
+--log-file-format="File changed! %f %i" \
+"$SOURCES" "$TARGET"
+
+RESULT=$?
+ 
+ #unexport the encrypted from the sshpass variable from bash profile
+ unset SSHPASS
+
+# Logic for rsync was run succesfully with exit code 0/1 for sucess and error
+if [[ $RESULT -gt 0 ]]
+then
+  MAIL_SUBJECT="ERROR - RSYNC-env-src-env-dest - Rsync Report"
+else
+  MAIL_SUBJECT="SUCCESS - RSYNC-env-src-env-dest - Rsync Report"
+fi
+
+# Send the email notification to email recepient provided
+
+echo "Rsync job status env-src-env-dest: " $MAIL_SUBJECT
+(echo -e "$MAIL_SUBJECT\n\nrsync legend:\n"; \
+        echo -e "\nThe backup on the server has terminated with the following message:\n"; \
+        cat $LOGFILE) | \
+        mail \
+        -r " appsync@ad.com"  \
+        -s "$MAIL_SUBJECT" \
+        $EMAIL_RECIPIENT
+/usr/bin/mailx -S smtp=email.ad.com   -r  appsync@ad.com  -s "$MAIL_SUBJECT " $EMAIL_RECIPIENT < $LOGFILE
